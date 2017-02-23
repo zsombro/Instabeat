@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/activity_editor"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context="com.berkizsombor.travelmidi.EditorActivity">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <ImageButton
+            android:id="@+id/play"
+            android:src="@drawable/ic_action_play"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <ImageButton
+            android:id="@+id/stop"
+            android:src="@drawable/ic_action_stop"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toEndOf="@id/play"
+            android:layout_toRightOf="@id/play" />
+
+        <Button
+            android:id="@+id/bpm"
+            android:text="120BPM"
+            android:layout_marginLeft="5pt"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toEndOf="@id/stop"
+            android:layout_toRightOf="@id/stop"
+            android:layout_alignTop="@id/stop"
+            android:layout_alignBottom="@id/stop"/>
+
+        <TextView
+            android:id="@+id/track_text"
+            android:text="TRACK"
+            android:paddingLeft="10pt"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toEndOf="@id/bpm"
+            android:layout_toRightOf="@id/bpm"
+            android:layout_centerVertical="true"/>
+
+        <Button
+            android:id="@+id/track1"
+            android:text="1"
+            android:layout_width="25pt"
+            android:layout_height="wrap_content"
+            android:layout_toEndOf="@id/track_text"
+            android:layout_toRightOf="@id/track_text"
+            android:layout_alignTop="@id/stop"
+            android:layout_alignBottom="@id/stop"/>
+
+        <ImageButton
+            android:id="@+id/synth_settings"
+            android:src="@drawable/ic_action_settings"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentEnd="true"/>
+
+    </RelativeLayout>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true">
+
+
+        <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fillViewport="true">
+
+            <com.berkizsombor.travelmidi.EditorView
+                android:id="@+id/editor"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+        </HorizontalScrollView>
+    </ScrollView>
+
+</LinearLayout>
