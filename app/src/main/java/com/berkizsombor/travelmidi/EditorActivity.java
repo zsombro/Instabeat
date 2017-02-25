@@ -9,6 +9,14 @@ import android.widget.ImageButton;
 import android.widget.NumberPicker;
 import android.widget.Toast;
 
+import org.puredata.android.io.AudioParameters;
+import org.puredata.android.io.PdAudio;
+import org.puredata.core.PdBase;
+import org.puredata.core.utils.IoUtils;
+
+import java.io.File;
+import java.io.IOException;
+
 public class EditorActivity extends AppCompatActivity {
 
     private EditorView editorView;
@@ -45,11 +53,19 @@ public class EditorActivity extends AppCompatActivity {
             @Override
             public void onNotePressed(byte note) {
                 // TODO: play the note that was pressed
+                PdBase.sendNoteOn(0, note, 127);
                 Toast.makeText(
                         getApplicationContext(),
                         "NOTE: " + Byte.toString(note),
                         Toast.LENGTH_SHORT)
                         .show();
+            }
+        });
+
+        editorView.setNoteReleasedListener(new OnNoteReleasedListener() {
+            @Override
+            public void onNoteReleased(byte note) {
+                PdBase.sendNoteOn(0, note, 0);
             }
         });
 
@@ -59,6 +75,38 @@ public class EditorActivity extends AppCompatActivity {
                 // TODO: add this note to MIDI data AND play the note
             }
         });
+
+        try {
+            initPureData();
+            loadPatch();
+        } catch (IOException e) {
+            finish();
+        }
+    }
+
+    private void initPureData() throws IOException {
+        int sampleRate = AudioParameters.suggestSampleRate();
+        PdAudio.initAudio(sampleRate, 0, 2, 8, true);
+    }
+
+    private void loadPatch() throws IOException {
+        File f = getFilesDir();
+        IoUtils.extractZipResource(getResources().openRawResource(R.raw.tm_core), f, true);
+
+        File patch = new File(f, "tm_core.pd");
+        PdBase.openPatch(patch.getAbsolutePath());
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        PdAudio.startAudio(this);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        PdAudio.stopAudio();
     }
 
     private void showBpmDialog() {

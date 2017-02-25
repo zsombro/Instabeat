@@ -30,6 +30,8 @@ public class EditorView extends View {
     private int keyHeight;
     private int keyWidth = 150;
 
+    private int pressedNote = 0;
+
     private String[] keys = new String[numOfKeys];
     private int[] keyVerticalPositions = new int[numOfKeys];
     private int[] lineVerticalPositions = new int[numOfKeys];
@@ -42,6 +44,7 @@ public class EditorView extends View {
 
     // event handlers
     OnNotePressedListener notePressedListener;
+    OnNoteReleasedListener noteReleasedListener;
     OnNotePlacedListener notePlacedListener;
 
     public EditorView(Context context, AttributeSet attrs) {
@@ -163,15 +166,29 @@ public class EditorView extends View {
         int action = event.getAction();
 
         switch(event.getAction()) {
+            case MotionEvent.ACTION_DOWN:
+                if (event.getX() < keyWidth) {
+                    // note pressed
+                    if (notePressedListener != null) {
+                        byte note =
+                                (byte) ( minOctave * 12 + (numOfKeys - (event.getY() / keyHeight)) );
+
+                        notePressedListener.onNotePressed(note);
+                        pressedNote = note;
+                    }
+                }
+                break;
             case MotionEvent.ACTION_UP:
                 if (event.getX() < keyWidth) {
                     // note pressed
                     if (notePressedListener != null) {
-                        byte note = (byte) ( minOctave * 12 + (numOfKeys - (event.getY() / keyHeight)) );
-                        notePressedListener.onNotePressed(note);
+                        noteReleasedListener.onNoteReleased((byte) pressedNote);
                     }
                 } else {
                     // note placed
+                    if (notePlacedListener != null) {
+                        notePlacedListener.OnNotePlaced((byte) 0, 0);
+                    }
                 }
                 break;
         }
@@ -212,6 +229,10 @@ public class EditorView extends View {
 
     public void setNotePlacedListener(OnNotePlacedListener notePlacedListener) {
         this.notePlacedListener = notePlacedListener;
+    }
+
+    public void setNoteReleasedListener(OnNoteReleasedListener noteReleasedListener) {
+        this.noteReleasedListener = noteReleasedListener;
     }
 
     public Idea getIdea() {
