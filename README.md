@@ -12,3 +12,9 @@ integrate PureData (preferably on a separate thread) and play back notes that ar
 have to be reflected in the editor view, but they also have to be added to the MIDI file itself (when should the app
 save progress into the midi file itself? the app doesn't store anything else...man, coding that part will not be fun
 at all)
+
+# Known bugs:
+- sound becomes distorted when the screen is turned off and then back on while the editor is
+active
+- differentiating between keypresses and scrolling doesn't work too well, it needs to be
+worked on

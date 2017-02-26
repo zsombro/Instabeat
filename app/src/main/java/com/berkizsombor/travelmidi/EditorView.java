@@ -30,6 +30,10 @@ public class EditorView extends View {
     private int keyHeight;
     private int keyWidth = 150;
 
+    private int pressedNote = 0;
+    private float startX, startY;
+    private double d;
+
     private String[] keys = new String[numOfKeys];
     private int[] keyVerticalPositions = new int[numOfKeys];
     private int[] lineVerticalPositions = new int[numOfKeys];
@@ -42,6 +46,7 @@ public class EditorView extends View {
 
     // event handlers
     OnNotePressedListener notePressedListener;
+    OnNoteReleasedListener noteReleasedListener;
     OnNotePlacedListener notePlacedListener;
 
     public EditorView(Context context, AttributeSet attrs) {
@@ -163,15 +168,34 @@ public class EditorView extends View {
         int action = event.getAction();
 
         switch(event.getAction()) {
-            case MotionEvent.ACTION_UP:
-                if (event.getX() < keyWidth) {
-                    // note pressed
-                    if (notePressedListener != null) {
-                        byte note = (byte) ( minOctave * 12 + (numOfKeys - (event.getY() / keyHeight)) );
-                        notePressedListener.onNotePressed(note);
+            case MotionEvent.ACTION_DOWN: // note pressed
+                startY = event.getY();
+                startX = event.getX();
+                if (notePressedListener != null) {
+                    byte note =
+                            (byte) ( minOctave * 12 + (numOfKeys - (startY / keyHeight)) );
+
+                    notePressedListener.onNotePressed(note);
+                    pressedNote = note;
+                }
+                break;
+            case MotionEvent.ACTION_MOVE:
+                float dX = event.getX() - startX;
+                float dY = event.getY() - startY;
+                d = Math.sqrt(dX*dX + dY*dY);
+                if (d > 50 && noteReleasedListener != null) {
+                    noteReleasedListener.onNoteReleased((byte) pressedNote);
+                }
+                break;
+            case MotionEvent.ACTION_UP: // note placed
+                if (noteReleasedListener != null) {
+                    noteReleasedListener.onNoteReleased((byte) pressedNote);
+                }
+                if (event.getX() > keyWidth) {
+                    if (notePlacedListener != null) {
+                        notePlacedListener.OnNotePlaced((byte) 0, 0);
+                        // TODO: note placement also needs to be represented on the UI
                     }
-                } else {
-                    // note placed
                 }
                 break;
         }
@@ -212,6 +236,10 @@ public class EditorView extends View {
 
     public void setNotePlacedListener(OnNotePlacedListener notePlacedListener) {
         this.notePlacedListener = notePlacedListener;
+    }
+
+    public void setNoteReleasedListener(OnNoteReleasedListener noteReleasedListener) {
+        this.noteReleasedListener = noteReleasedListener;
     }
 
     public Idea getIdea() {
