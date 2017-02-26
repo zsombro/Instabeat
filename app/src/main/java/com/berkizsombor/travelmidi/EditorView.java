@@ -31,6 +31,8 @@ public class EditorView extends View {
     private int keyWidth = 150;
 
     private int pressedNote = 0;
+    private float startX, startY;
+    private double d;
 
     private String[] keys = new String[numOfKeys];
     private int[] keyVerticalPositions = new int[numOfKeys];
@@ -166,28 +168,33 @@ public class EditorView extends View {
         int action = event.getAction();
 
         switch(event.getAction()) {
-            case MotionEvent.ACTION_DOWN:
-                if (event.getX() < keyWidth) {
-                    // note pressed
-                    if (notePressedListener != null) {
-                        byte note =
-                                (byte) ( minOctave * 12 + (numOfKeys - (event.getY() / keyHeight)) );
+            case MotionEvent.ACTION_DOWN: // note pressed
+                startY = event.getY();
+                startX = event.getX();
+                if (notePressedListener != null) {
+                    byte note =
+                            (byte) ( minOctave * 12 + (numOfKeys - (startY / keyHeight)) );
 
-                        notePressedListener.onNotePressed(note);
-                        pressedNote = note;
-                    }
+                    notePressedListener.onNotePressed(note);
+                    pressedNote = note;
                 }
                 break;
-            case MotionEvent.ACTION_UP:
-                if (event.getX() < keyWidth) {
-                    // note pressed
-                    if (notePressedListener != null) {
-                        noteReleasedListener.onNoteReleased((byte) pressedNote);
-                    }
-                } else {
-                    // note placed
+            case MotionEvent.ACTION_MOVE:
+                float dX = event.getX() - startX;
+                float dY = event.getY() - startY;
+                d = Math.sqrt(dX*dX + dY*dY);
+                if (d > 50 && noteReleasedListener != null) {
+                    noteReleasedListener.onNoteReleased((byte) pressedNote);
+                }
+                break;
+            case MotionEvent.ACTION_UP: // note placed
+                if (noteReleasedListener != null) {
+                    noteReleasedListener.onNoteReleased((byte) pressedNote);
+                }
+                if (event.getX() > keyWidth) {
                     if (notePlacedListener != null) {
                         notePlacedListener.OnNotePlaced((byte) 0, 0);
+                        // TODO: note placement also needs to be represented on the UI
                     }
                 }
                 break;
