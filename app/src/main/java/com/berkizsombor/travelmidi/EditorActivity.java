@@ -1,6 +1,7 @@
 package com.berkizsombor.travelmidi;
 
 import android.app.Dialog;
+import android.net.Uri;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
@@ -8,6 +9,8 @@ import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.NumberPicker;
 import android.widget.Toast;
+
+import com.leff.midi.MidiFile;
 
 import org.puredata.android.io.AudioParameters;
 import org.puredata.android.io.PdAudio;
@@ -24,6 +27,7 @@ public class EditorActivity extends AppCompatActivity {
     private Button bpmButton;
 
     private Idea idea;
+    private MidiFile midi;
 
     private int bpm = 120;
 
@@ -79,8 +83,20 @@ public class EditorActivity extends AppCompatActivity {
         try {
             initPureData();
             loadPatch();
+            loadOrCreateMidiData();
         } catch (IOException e) {
             finish();
+        }
+    }
+
+    private void loadOrCreateMidiData() throws IOException {
+        File f = new File(idea.getFileName());
+        if (f.exists()) {
+            midi = new MidiFile(new File(idea.getFileName()));
+            // TODO: things to solve: read BPM, place every note on the editor
+        } else {
+            // TODO: initialize BPM!!!
+            midi = new MidiFile();
         }
     }
 
@@ -109,6 +125,18 @@ public class EditorActivity extends AppCompatActivity {
         PdAudio.stopAudio();
     }
 
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+
+        File out = new File(idea.getFileName());
+        try {
+            midi.writeToFile(out);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     private void showBpmDialog() {
         final Dialog d = new Dialog(this);
         d.setContentView(R.layout.dialog_change_bpm);
@@ -130,5 +158,15 @@ public class EditorActivity extends AppCompatActivity {
         });
 
         d.show();
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
     }
 }
