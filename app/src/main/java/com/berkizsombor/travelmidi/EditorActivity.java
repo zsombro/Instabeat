@@ -95,8 +95,8 @@ public class EditorActivity extends AppCompatActivity {
             midi = new MidiFile(new File(idea.getFileName()));
             // TODO: things to solve: read BPM, place every note on the editor
         } else {
-            // TODO: initialize BPM!!!
             midi = new MidiFile();
+            // TODO: initialize BPM!!!
         }
     }
 
@@ -145,6 +145,7 @@ public class EditorActivity extends AppCompatActivity {
         np.setMaxValue(300);
         np.setMinValue(0);
         np.setValue(bpm);
+        // TODO: when BPM changes, it needs to be readjusted in the tempo track
 
         Button okButton = (Button) d.findViewById(R.id.ok);
         okButton.setOnClickListener(new View.OnClickListener() {
