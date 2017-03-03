@@ -1,7 +1,6 @@
 package com.berkizsombor.travelmidi;
 
 import android.app.Dialog;
-import android.net.Uri;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
@@ -11,6 +10,10 @@ import android.widget.NumberPicker;
 import android.widget.Toast;
 
 import com.leff.midi.MidiFile;
+import com.leff.midi.MidiTrack;
+import com.leff.midi.event.MidiEvent;
+import com.leff.midi.event.meta.Tempo;
+import com.leff.midi.event.meta.TimeSignature;
 
 import org.puredata.android.io.AudioParameters;
 import org.puredata.android.io.PdAudio;
@@ -22,14 +25,16 @@ import java.io.IOException;
 
 public class EditorActivity extends AppCompatActivity {
 
+    public static final int DEFAULT_BPM = 120;
+
     private EditorView editorView;
     private ImageButton playButton, stopButton, editButton;
     private Button bpmButton;
 
     private Idea idea;
-    private MidiFile midi;
 
-    private int bpm = 120;
+    private MidiFile midi;
+    private Tempo tempo;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,6 +50,9 @@ public class EditorActivity extends AppCompatActivity {
 
         idea = (Idea) getIntent().getSerializableExtra("idea");
         editorView.setIdea(idea);
+
+        tempo = new Tempo();
+        tempo.setBpm(DEFAULT_BPM);
 
         bpmButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -84,6 +92,8 @@ public class EditorActivity extends AppCompatActivity {
             initPureData();
             loadPatch();
             loadOrCreateMidiData();
+
+            bpmButton.setText(String.format("%sBPM", tempo.getBpm()));
         } catch (IOException e) {
             finish();
         }
@@ -94,9 +104,11 @@ public class EditorActivity extends AppCompatActivity {
         if (f.exists()) {
             midi = new MidiFile(new File(idea.getFileName()));
             // TODO: things to solve: read BPM, place every note on the editor
+            loadExistingMidiFile();
         } else {
             midi = new MidiFile();
             // TODO: initialize BPM!!!
+            setupNewMidiFile();
         }
     }
 
@@ -111,6 +123,32 @@ public class EditorActivity extends AppCompatActivity {
 
         File patch = new File(f, "tm_core.pd");
         PdBase.openPatch(patch.getAbsolutePath());
+    }
+
+    private void setupNewMidiFile() {
+        MidiTrack tempoTrack = new MidiTrack();
+        MidiTrack noteTrack1 = new MidiTrack();
+
+        TimeSignature ts = new TimeSignature();
+        ts.setTimeSignature(4, 4, TimeSignature.DEFAULT_METER, TimeSignature.DEFAULT_DIVISION);
+
+        tempoTrack.insertEvent(ts);
+        tempoTrack.insertEvent(tempo);
+
+        midi.addTrack(tempoTrack);
+        midi.addTrack(noteTrack1);
+    }
+
+    private void loadExistingMidiFile() {
+        MidiTrack tempoTrack = midi.getTracks().get(0);
+
+        // get BPM for track
+        for (MidiEvent e :
+                tempoTrack.getEvents()) {
+            if (e instanceof Tempo) {
+                tempo = (Tempo) e;
+            }
+        }
     }
 
     @Override
@@ -144,15 +182,17 @@ public class EditorActivity extends AppCompatActivity {
         final NumberPicker np = (NumberPicker) d.findViewById(R.id.bpm_picker);
         np.setMaxValue(300);
         np.setMinValue(0);
-        np.setValue(bpm);
+        np.setValue((int) tempo.getBpm());
         // TODO: when BPM changes, it needs to be readjusted in the tempo track
 
         Button okButton = (Button) d.findViewById(R.id.ok);
         okButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                bpm = np.getValue();
-                bpmButton.setText(String.format(getString(R.string.bpm), bpm));
+                int newBpm = np.getValue();
+
+                tempo.setBpm(newBpm);
+                bpmButton.setText(String.format(getString(R.string.bpm), newBpm));
 
                 d.dismiss();
             }
