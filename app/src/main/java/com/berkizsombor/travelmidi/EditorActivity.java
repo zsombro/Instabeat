@@ -12,8 +12,10 @@ import android.widget.Toast;
 import com.leff.midi.MidiFile;
 import com.leff.midi.MidiTrack;
 import com.leff.midi.event.MidiEvent;
+import com.leff.midi.event.NoteOn;
 import com.leff.midi.event.meta.Tempo;
 import com.leff.midi.event.meta.TimeSignature;
+import com.leff.midi.util.MidiProcessor;
 
 import org.puredata.android.io.AudioParameters;
 import org.puredata.android.io.PdAudio;
@@ -22,6 +24,7 @@ import org.puredata.core.utils.IoUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 
 public class EditorActivity extends AppCompatActivity {
 
@@ -33,8 +36,10 @@ public class EditorActivity extends AppCompatActivity {
 
     private Idea idea;
 
+    private MidiProcessor processor;
     private MidiFile midi;
     private Tempo tempo;
+    MidiTrack noteTrack1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -84,7 +89,17 @@ public class EditorActivity extends AppCompatActivity {
         editorView.setNotePlacedListener(new OnNotePlacedListener() {
             @Override
             public void OnNotePlaced(byte note, int pos) {
-                // TODO: add this note to MIDI data AND play the note
+                // TODO: this is nice, but everything is a quarter note
+                noteTrack1.insertNote(1, note, 127, pos * MidiFile.DEFAULT_RESOLUTION, 120);
+            }
+        });
+
+        playButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                processor = new MidiProcessor(midi);
+                processor.registerEventListener(new MidiPdInterface(), MidiEvent.class);
+                processor.start();
             }
         });
 
@@ -101,6 +116,7 @@ public class EditorActivity extends AppCompatActivity {
 
     private void loadOrCreateMidiData() throws IOException {
         File f = new File(idea.getFileName());
+
         if (f.exists()) {
             midi = new MidiFile(new File(idea.getFileName()));
             // TODO: things to solve: read BPM, place every note on the editor
@@ -110,6 +126,8 @@ public class EditorActivity extends AppCompatActivity {
             // TODO: initialize BPM!!!
             setupNewMidiFile();
         }
+
+
     }
 
     private void initPureData() throws IOException {
@@ -127,7 +145,7 @@ public class EditorActivity extends AppCompatActivity {
 
     private void setupNewMidiFile() {
         MidiTrack tempoTrack = new MidiTrack();
-        MidiTrack noteTrack1 = new MidiTrack();
+        noteTrack1 = new MidiTrack();
 
         TimeSignature ts = new TimeSignature();
         ts.setTimeSignature(4, 4, TimeSignature.DEFAULT_METER, TimeSignature.DEFAULT_DIVISION);
@@ -140,13 +158,30 @@ public class EditorActivity extends AppCompatActivity {
     }
 
     private void loadExistingMidiFile() {
-        MidiTrack tempoTrack = midi.getTracks().get(0);
+        List<MidiTrack> tracks = midi.getTracks();
+
+        MidiTrack tempoTrack = tracks.get(0);
+        noteTrack1 = tracks.get(1);
 
         // get BPM for track
         for (MidiEvent e :
                 tempoTrack.getEvents()) {
             if (e instanceof Tempo) {
                 tempo = (Tempo) e;
+            }
+        }
+
+        // load notes
+        // TODO: there has to be a way to "inject" a bunch of notes into the EditorView
+        for (MidiEvent e :
+                noteTrack1.getEvents()) {
+            if (e instanceof NoteOn) {
+                NoteOn n = (NoteOn) e;
+
+                if (n.getVelocity() != 0) {
+                    editorView.placeNote(
+                            (byte) n.getNoteValue(), (int) n.getTick() / MidiFile.DEFAULT_RESOLUTION);
+                }
             }
         }
     }
@@ -167,6 +202,10 @@ public class EditorActivity extends AppCompatActivity {
     public void onBackPressed() {
         super.onBackPressed();
 
+        saveMidiData();
+    }
+
+    private void saveMidiData() {
         File out = new File(idea.getFileName());
         try {
             midi.writeToFile(out);

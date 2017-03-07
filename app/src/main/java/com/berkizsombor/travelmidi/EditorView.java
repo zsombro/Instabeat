@@ -176,16 +176,16 @@ public class EditorView extends View {
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         // TODO: get position and return either onNotePressed or onNotePlaced
+        startY = event.getY();
+        startX = event.getX();
 
         byte note =
                 (byte) ( minOctave * 12 + (numOfKeys - (startY / keyHeight)) );
 
-        byte pos = (byte) (startX / keyWidth);
+        int pos = (byte) (startX / keyWidth);
 
         switch(event.getAction()) {
             case MotionEvent.ACTION_DOWN: // note pressed
-                startY = event.getY();
-                startX = event.getX();
 
                 if (notePressedListener != null) {
                     notePressedListener.onNotePressed(note);
@@ -207,14 +207,16 @@ public class EditorView extends View {
                 }
                 if (event.getX() > keyWidth) {
                     if (notePlacedListener != null) {
-                        // note indexing starts at 0 even though rendering starts
-                        // at 1. When loading data, this needs to be considered
-                        notePlacedListener.OnNotePlaced(note, pos - 1);
 
                         byte key = (byte) (startY / keyHeight);
 
                         placedNotes[key][pos] = (byte) (placedNotes[key][pos] == 0 ? 1 : 0);
-                        // TODO: might have to invalide here to see changes
+
+                        // TODO: pass new state!
+                        // note indexing starts at 0 even though rendering starts
+                        // at 1. When loading data, this needs to be considered
+                        notePlacedListener.OnNotePlaced(note, pos - 1);
+
                         invalidate();
                     }
                 }
@@ -224,14 +226,14 @@ public class EditorView extends View {
         return true;
     }
 
+    public void placeNote(byte key, int position) {
+        placedNotes[maxOctave * 12 - key - 1][position + 1] = 1;
+    }
+
     private void renderLoop(Canvas canvas, int i) {
         // keys
         canvas.drawRect(0, i * keyHeight, keyWidth, lineVerticalPositions[i] + keyHeight, keyPaint);
         canvas.drawLine(0, i * keyHeight, getMeasuredWidth(), i * keyHeight, keyPaint);
-
-        // note names
-//        canvas.drawText(keys[i],
-//                keyWidth / 3, keyVerticalPositions[i], textPaint);
 
         // note names horizontally
         for (int j = 0; j < numOfNotes; j += 5) {
