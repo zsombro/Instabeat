@@ -56,6 +56,7 @@ public class EditorView extends View {
     OnNotePressedListener notePressedListener;
     OnNoteReleasedListener noteReleasedListener;
     OnNotePlacedListener notePlacedListener;
+    OnNoteRemovedListener noteRemovedListener;
 
     public EditorView(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -206,16 +207,19 @@ public class EditorView extends View {
                     noteReleasedListener.onNoteReleased((byte) pressedNote);
                 }
                 if (event.getX() > keyWidth) {
-                    if (notePlacedListener != null) {
+                    if (notePlacedListener != null && noteRemovedListener != null) {
 
                         byte key = (byte) (startY / keyHeight);
 
-                        placedNotes[key][pos] = (byte) (placedNotes[key][pos] == 0 ? 1 : 0);
+                        //placedNotes[key][pos] = (byte) (placedNotes[key][pos] == 0 ? 1 : 0);
 
-                        // TODO: pass new state!
-                        // note indexing starts at 0 even though rendering starts
-                        // at 1. When loading data, this needs to be considered
-                        notePlacedListener.OnNotePlaced(note, pos - 1);
+                        if (placedNotes[key][pos] == 0) {
+                            placedNotes[key][pos] = 1;
+                            notePlacedListener.OnNotePlaced(note, pos - 1);
+                        } else {
+                            placedNotes[key][pos] = 0;
+                            noteRemovedListener.OnNoteRemoved(note, pos - 1);
+                        }
 
                         invalidate();
                     }
@@ -271,6 +275,10 @@ public class EditorView extends View {
 
     public void setNoteReleasedListener(OnNoteReleasedListener noteReleasedListener) {
         this.noteReleasedListener = noteReleasedListener;
+    }
+
+    public void setNoteRemovedListener(OnNoteRemovedListener noteRemovedListener) {
+        this.noteRemovedListener = noteRemovedListener;
     }
 
     public Idea getIdea() {

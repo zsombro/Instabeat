@@ -24,6 +24,7 @@ import org.puredata.core.utils.IoUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.List;
 
 public class EditorActivity extends AppCompatActivity {
@@ -94,12 +95,44 @@ public class EditorActivity extends AppCompatActivity {
             }
         });
 
+        editorView.setNoteRemovedListener(new OnNoteRemovedListener() {
+            @Override
+            public void OnNoteRemoved(byte note, int pos) {
+                MidiEvent delete = null;
+
+                for (MidiEvent e :
+                        noteTrack1.getEvents()) {
+                    if (e instanceof NoteOn) {
+                        NoteOn n = (NoteOn) e;
+                        if (n.getNoteValue() == note
+                                && n.getTick() == MidiFile.DEFAULT_RESOLUTION * pos) {
+                            delete = e;
+                            break;
+                        }
+                    }
+                }
+
+                if (delete != null) {
+                    noteTrack1.removeEvent(delete);
+                }
+            }
+        });
+
         playButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 processor = new MidiProcessor(midi);
                 processor.registerEventListener(new MidiPdInterface(), MidiEvent.class);
                 processor.start();
+            }
+        });
+
+        stopButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (processor != null && processor.isRunning()) {
+                    processor.stop();
+                }
             }
         });
 
