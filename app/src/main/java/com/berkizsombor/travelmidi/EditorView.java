@@ -25,6 +25,7 @@ public class EditorView extends View {
 
     private int numOfKeys = (maxOctave - minOctave) * 12;
     private int numOfNotes = 50; // should be a multiple of 5 for rendering efficiency
+
     private int textSize = 35;
     private int textPadding = 15;
     private int keyHeight;
@@ -32,7 +33,14 @@ public class EditorView extends View {
 
     private int pressedNote = 0;
     private float startX, startY;
-    private double d;
+
+    /*
+    Originally I planned to use a linked list to store notes in the view, but I decided against
+    them when I discovered that object references take up 4 bytes of space,
+    while a boolean/byte array only takes up 1 byte/item. Arrays are also faster to traverse
+    than dynamic data structures
+     */
+    private byte[][] placedNotes = new byte[numOfKeys][numOfNotes];
 
     private String[] keys = new String[numOfKeys];
     private int[] keyVerticalPositions = new int[numOfKeys];
@@ -48,6 +56,7 @@ public class EditorView extends View {
     OnNotePressedListener notePressedListener;
     OnNoteReleasedListener noteReleasedListener;
     OnNotePlacedListener notePlacedListener;
+    OnNoteRemovedListener noteRemovedListener;
 
     public EditorView(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -81,6 +90,9 @@ public class EditorView extends View {
         textPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         textPaint.setColor(Color.BLACK);
         textPaint.setTextSize(textSize);
+
+        notePaint = new Paint(0);
+        notePaint.setColor(getResources().getColor(R.color.colorPrimary));
 
         noteTextPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         noteTextPaint.setColor(Color.GRAY);
@@ -165,16 +177,18 @@ public class EditorView extends View {
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         // TODO: get position and return either onNotePressed or onNotePlaced
-        int action = event.getAction();
+        startY = event.getY();
+        startX = event.getX();
+
+        byte note =
+                (byte) ( minOctave * 12 + (numOfKeys - (startY / keyHeight)) );
+
+        int pos = (byte) (startX / keyWidth);
 
         switch(event.getAction()) {
             case MotionEvent.ACTION_DOWN: // note pressed
-                startY = event.getY();
-                startX = event.getX();
-                if (notePressedListener != null) {
-                    byte note =
-                            (byte) ( minOctave * 12 + (numOfKeys - (startY / keyHeight)) );
 
+                if (notePressedListener != null) {
                     notePressedListener.onNotePressed(note);
                     pressedNote = note;
                 }
@@ -182,19 +196,32 @@ public class EditorView extends View {
             case MotionEvent.ACTION_MOVE:
                 float dX = event.getX() - startX;
                 float dY = event.getY() - startY;
-                d = Math.sqrt(dX*dX + dY*dY);
+                double d = Math.sqrt(dX * dX + dY * dY);
+
                 if (d > 50 && noteReleasedListener != null) {
                     noteReleasedListener.onNoteReleased((byte) pressedNote);
                 }
                 break;
-            case MotionEvent.ACTION_UP: // note placed
+            case MotionEvent.ACTION_UP:
                 if (noteReleasedListener != null) {
                     noteReleasedListener.onNoteReleased((byte) pressedNote);
                 }
                 if (event.getX() > keyWidth) {
-                    if (notePlacedListener != null) {
-                        notePlacedListener.OnNotePlaced((byte) 0, 0);
-                        // TODO: note placement also needs to be represented on the UI
+                    if (notePlacedListener != null && noteRemovedListener != null) {
+
+                        byte key = (byte) (startY / keyHeight);
+
+                        //placedNotes[key][pos] = (byte) (placedNotes[key][pos] == 0 ? 1 : 0);
+
+                        if (placedNotes[key][pos] == 0) {
+                            placedNotes[key][pos] = 1;
+                            notePlacedListener.OnNotePlaced(note, pos - 1);
+                        } else {
+                            placedNotes[key][pos] = 0;
+                            noteRemovedListener.OnNoteRemoved(note, pos - 1);
+                        }
+
+                        invalidate();
                     }
                 }
                 break;
@@ -203,17 +230,17 @@ public class EditorView extends View {
         return true;
     }
 
+    public void placeNote(byte key, int position) {
+        placedNotes[maxOctave * 12 - key - 1][position + 1] = 1;
+    }
+
     private void renderLoop(Canvas canvas, int i) {
         // keys
         canvas.drawRect(0, i * keyHeight, keyWidth, lineVerticalPositions[i] + keyHeight, keyPaint);
         canvas.drawLine(0, i * keyHeight, getMeasuredWidth(), i * keyHeight, keyPaint);
 
-        // note names
-        canvas.drawText(keys[i],
-                keyWidth / 3, keyVerticalPositions[i], textPaint);
-
         // note names horizontally
-        for (int j = 1; j < numOfNotes; j += 5) {
+        for (int j = 0; j < numOfNotes; j += 5) {
             horizontalRenderLoop(canvas, i, j);
             horizontalRenderLoop(canvas, i, j + 1);
             horizontalRenderLoop(canvas, i, j + 2);
@@ -225,6 +252,14 @@ public class EditorView extends View {
     private void horizontalRenderLoop(Canvas canvas, int i, int j) {
 
         canvas.drawLine(lineHorizontalPositions[j], 0, lineHorizontalPositions[j], getMeasuredHeight(), keyPaint);
+
+        if (placedNotes[i][j] == 1) {
+            canvas.drawRect(
+                    lineHorizontalPositions[j], i * keyHeight,
+                    lineHorizontalPositions[j] + keyWidth, (i * keyHeight) + keyHeight,
+                    notePaint
+            );
+        }
 
         canvas.drawText(keys[i],
                 lineHorizontalPositions[j] + 20, keyVerticalPositions[i], noteTextPaint);
@@ -240,6 +275,10 @@ public class EditorView extends View {
 
     public void setNoteReleasedListener(OnNoteReleasedListener noteReleasedListener) {
         this.noteReleasedListener = noteReleasedListener;
+    }
+
+    public void setNoteRemovedListener(OnNoteRemovedListener noteRemovedListener) {
+        this.noteRemovedListener = noteRemovedListener;
     }
 
     public Idea getIdea() {

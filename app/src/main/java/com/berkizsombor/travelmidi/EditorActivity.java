@@ -9,6 +9,14 @@ import android.widget.ImageButton;
 import android.widget.NumberPicker;
 import android.widget.Toast;
 
+import com.leff.midi.MidiFile;
+import com.leff.midi.MidiTrack;
+import com.leff.midi.event.MidiEvent;
+import com.leff.midi.event.NoteOn;
+import com.leff.midi.event.meta.Tempo;
+import com.leff.midi.event.meta.TimeSignature;
+import com.leff.midi.util.MidiProcessor;
+
 import org.puredata.android.io.AudioParameters;
 import org.puredata.android.io.PdAudio;
 import org.puredata.core.PdBase;
@@ -16,8 +24,12 @@ import org.puredata.core.utils.IoUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Iterator;
+import java.util.List;
 
 public class EditorActivity extends AppCompatActivity {
+
+    public static final int DEFAULT_BPM = 120;
 
     private EditorView editorView;
     private ImageButton playButton, stopButton, editButton;
@@ -25,7 +37,10 @@ public class EditorActivity extends AppCompatActivity {
 
     private Idea idea;
 
-    private int bpm = 120;
+    private MidiProcessor processor;
+    private MidiFile midi;
+    private Tempo tempo;
+    MidiTrack noteTrack1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -41,6 +56,9 @@ public class EditorActivity extends AppCompatActivity {
 
         idea = (Idea) getIntent().getSerializableExtra("idea");
         editorView.setIdea(idea);
+
+        tempo = new Tempo();
+        tempo.setBpm(DEFAULT_BPM);
 
         bpmButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -72,16 +90,77 @@ public class EditorActivity extends AppCompatActivity {
         editorView.setNotePlacedListener(new OnNotePlacedListener() {
             @Override
             public void OnNotePlaced(byte note, int pos) {
-                // TODO: add this note to MIDI data AND play the note
+                // TODO: this is nice, but everything is a quarter note
+                noteTrack1.insertNote(1, note, 127, pos * MidiFile.DEFAULT_RESOLUTION, 120);
+            }
+        });
+
+        editorView.setNoteRemovedListener(new OnNoteRemovedListener() {
+            @Override
+            public void OnNoteRemoved(byte note, int pos) {
+                MidiEvent delete = null;
+
+                for (MidiEvent e :
+                        noteTrack1.getEvents()) {
+                    if (e instanceof NoteOn) {
+                        NoteOn n = (NoteOn) e;
+                        if (n.getNoteValue() == note
+                                && n.getTick() == MidiFile.DEFAULT_RESOLUTION * pos) {
+                            delete = e;
+                            break;
+                        }
+                    }
+                }
+
+                if (delete != null) {
+                    noteTrack1.removeEvent(delete);
+                }
+            }
+        });
+
+        playButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                processor = new MidiProcessor(midi);
+                processor.registerEventListener(new MidiPdInterface(), MidiEvent.class);
+                processor.start();
+            }
+        });
+
+        stopButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (processor != null && processor.isRunning()) {
+                    processor.stop();
+                }
             }
         });
 
         try {
             initPureData();
             loadPatch();
+            loadOrCreateMidiData();
+
+            bpmButton.setText(String.format("%sBPM", tempo.getBpm()));
         } catch (IOException e) {
             finish();
         }
+    }
+
+    private void loadOrCreateMidiData() throws IOException {
+        File f = new File(idea.getFileName());
+
+        if (f.exists()) {
+            midi = new MidiFile(new File(idea.getFileName()));
+            // TODO: things to solve: read BPM, place every note on the editor
+            loadExistingMidiFile();
+        } else {
+            midi = new MidiFile();
+            // TODO: initialize BPM!!!
+            setupNewMidiFile();
+        }
+
+
     }
 
     private void initPureData() throws IOException {
@@ -97,6 +176,49 @@ public class EditorActivity extends AppCompatActivity {
         PdBase.openPatch(patch.getAbsolutePath());
     }
 
+    private void setupNewMidiFile() {
+        MidiTrack tempoTrack = new MidiTrack();
+        noteTrack1 = new MidiTrack();
+
+        TimeSignature ts = new TimeSignature();
+        ts.setTimeSignature(4, 4, TimeSignature.DEFAULT_METER, TimeSignature.DEFAULT_DIVISION);
+
+        tempoTrack.insertEvent(ts);
+        tempoTrack.insertEvent(tempo);
+
+        midi.addTrack(tempoTrack);
+        midi.addTrack(noteTrack1);
+    }
+
+    private void loadExistingMidiFile() {
+        List<MidiTrack> tracks = midi.getTracks();
+
+        MidiTrack tempoTrack = tracks.get(0);
+        noteTrack1 = tracks.get(1);
+
+        // get BPM for track
+        for (MidiEvent e :
+                tempoTrack.getEvents()) {
+            if (e instanceof Tempo) {
+                tempo = (Tempo) e;
+            }
+        }
+
+        // load notes
+        // TODO: there has to be a way to "inject" a bunch of notes into the EditorView
+        for (MidiEvent e :
+                noteTrack1.getEvents()) {
+            if (e instanceof NoteOn) {
+                NoteOn n = (NoteOn) e;
+
+                if (n.getVelocity() != 0) {
+                    editorView.placeNote(
+                            (byte) n.getNoteValue(), (int) n.getTick() / MidiFile.DEFAULT_RESOLUTION);
+                }
+            }
+        }
+    }
+
     @Override
     protected void onResume() {
         super.onResume();
@@ -109,6 +231,22 @@ public class EditorActivity extends AppCompatActivity {
         PdAudio.stopAudio();
     }
 
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+
+        saveMidiData();
+    }
+
+    private void saveMidiData() {
+        File out = new File(idea.getFileName());
+        try {
+            midi.writeToFile(out);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     private void showBpmDialog() {
         final Dialog d = new Dialog(this);
         d.setContentView(R.layout.dialog_change_bpm);
@@ -116,19 +254,32 @@ public class EditorActivity extends AppCompatActivity {
         final NumberPicker np = (NumberPicker) d.findViewById(R.id.bpm_picker);
         np.setMaxValue(300);
         np.setMinValue(0);
-        np.setValue(bpm);
+        np.setValue((int) tempo.getBpm());
+        // TODO: when BPM changes, it needs to be readjusted in the tempo track
 
         Button okButton = (Button) d.findViewById(R.id.ok);
         okButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                bpm = np.getValue();
-                bpmButton.setText(String.format(getString(R.string.bpm), bpm));
+                int newBpm = np.getValue();
+
+                tempo.setBpm(newBpm);
+                bpmButton.setText(String.format(getString(R.string.bpm), newBpm));
 
                 d.dismiss();
             }
         });
 
         d.show();
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
     }
 }

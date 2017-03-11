@@ -9,4 +9,9 @@
     <string name="filter_by_tag">Filter by tag</string>
     <string name="bpm">%dBPM</string>
     <string name="ok">OK</string>
+    <string name="save_successful">Saved to Documents folder</string>
+    <string name="save_failed">Save failed</string>
+    <string-array name="export_array">
+        <item>Export to SD card</item>
+    </string-array>
 </resources>
