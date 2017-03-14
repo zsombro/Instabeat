@@ -1,6 +1,6 @@
 # Instabeat
 
-This is my university thesis project. It's Android application that allows to user to sketch out short pieces of music and play it 
+This is my university thesis project. It's an Android application that allows the user to sketch out short pieces of music and play them 
 back using a built-in, customizable synthetiser. *This project is not complete yet, but I'm constantly working on it (well, not like I have
 any other choice), please do not create any pull requests right now.* I can't accept pull requests, because that would mean I did not
 develop this project on my own. I'm using this repository to back up my work and track my progress.
@@ -8,15 +8,16 @@ develop this project on my own. I'm using this repository to back up my work and
 # Latest changes
 - MIDI editing features have been added (add/remove notes, playback)
 - PureData has been integrated
+- the synth has an envelope filter, but it can't be changed yet
 
 # To do
 - **multitrack support**
-- the PureData synth needs to be expanded, most importantly with an envelope filter and a few effects
-- a new activity (*SynthSettingsActivity*) has to be added to allow the users to change the sound
+- the PureData synth needs to be expanded with a few effects, multiple channels
+- a new activity (*SynthSettingsActivity*) has to be added to allow users to change the sound
 
 # Current design considerations
 - multitrack support
-  - this is the most important feature right now, as the SynthSettings and later improvements to the synth engine interface will depend on it's presence
+  - this is the most important feature right now, as the SynthSettings and later improvements to the synth engine's interface will depend on it's presence
   - the *EditorView* will need to store multiple stacks of notes and swap the ones being rendered after receiving a *setCurrentChannel(int channel)* call
   - the *SynthSettingsActivity* will need to receive a parameter indicating the current channel
   - Theoretically, there is a way for the *Synth* activity to both read and write the state of the synth from the Pure Data code without a Java interface, but this would provide no way to store these parameters (this is also an effort to decouple this component from the *EditorActivity*). Synth settings need to be modeled into a class and saved into the project file. This will require some changes in the file format, obviously
@@ -26,5 +27,4 @@ develop this project on my own. I'm using this repository to back up my work and
 # Known bugs
 - sound becomes distorted when the screen is turned off and then back on while the editor is
 active (sometimes this also happens when I press back in the Editor and then reopen a song)
-- differentiating between keypresses and scrolling doesn't work too well, it needs to be
-worked on
+- differentiating between keypresses and scrolling doesn't work too well
