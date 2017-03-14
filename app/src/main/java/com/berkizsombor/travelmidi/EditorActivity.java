@@ -24,7 +24,6 @@ import org.puredata.core.utils.IoUtils;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Iterator;
 import java.util.List;
 
 public class EditorActivity extends AppCompatActivity {
@@ -34,13 +33,14 @@ public class EditorActivity extends AppCompatActivity {
     private EditorView editorView;
     private ImageButton playButton, stopButton, editButton;
     private Button bpmButton;
+    private Button[] trackButtons;
 
     private Idea idea;
 
     private MidiProcessor processor;
     private MidiFile midi;
     private Tempo tempo;
-    MidiTrack noteTrack1;
+    MidiTrack noteTrack;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -53,6 +53,22 @@ public class EditorActivity extends AppCompatActivity {
         editButton = (ImageButton) findViewById(R.id.synth_settings);
 
         bpmButton = (Button) findViewById(R.id.bpm);
+
+        trackButtons = new Button[EditorView.NUM_CHANNELS];
+
+        // channel switching buttons
+        for (int i = 0; i < EditorView.NUM_CHANNELS; i++) {
+            final int j = i + 1;
+            int id = getResources().getIdentifier("track" + j, "id", getPackageName());
+            trackButtons[i] = (Button) findViewById(id);
+
+            trackButtons[i].setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    editorView.setChannel(j);
+                }
+            });
+        }
 
         idea = (Idea) getIntent().getSerializableExtra("idea");
         editorView.setIdea(idea);
@@ -89,19 +105,19 @@ public class EditorActivity extends AppCompatActivity {
 
         editorView.setNotePlacedListener(new OnNotePlacedListener() {
             @Override
-            public void OnNotePlaced(byte note, int pos) {
+            public void OnNotePlaced(int channel, byte note, int pos) {
                 // TODO: this is nice, but everything is a quarter note
-                noteTrack1.insertNote(1, note, 127, pos * MidiFile.DEFAULT_RESOLUTION, 120);
+                noteTrack.insertNote(channel, note, 127, pos * MidiFile.DEFAULT_RESOLUTION, 120);
             }
         });
 
         editorView.setNoteRemovedListener(new OnNoteRemovedListener() {
             @Override
-            public void OnNoteRemoved(byte note, int pos) {
+            public void OnNoteRemoved(int channel, byte note, int pos) {
                 MidiEvent delete = null;
 
                 for (MidiEvent e :
-                        noteTrack1.getEvents()) {
+                        noteTrack.getEvents()) {
                     if (e instanceof NoteOn) {
                         NoteOn n = (NoteOn) e;
                         if (n.getNoteValue() == note
@@ -113,7 +129,7 @@ public class EditorActivity extends AppCompatActivity {
                 }
 
                 if (delete != null) {
-                    noteTrack1.removeEvent(delete);
+                    noteTrack.removeEvent(delete);
                 }
             }
         });
@@ -141,7 +157,7 @@ public class EditorActivity extends AppCompatActivity {
             loadPatch();
             loadOrCreateMidiData();
 
-            bpmButton.setText(String.format("%sBPM", tempo.getBpm()));
+            bpmButton.setText(String.format("%dBPM", (int) tempo.getBpm()));
         } catch (IOException e) {
             finish();
         }
@@ -160,7 +176,6 @@ public class EditorActivity extends AppCompatActivity {
             setupNewMidiFile();
         }
 
-
     }
 
     private void initPureData() throws IOException {
@@ -178,7 +193,7 @@ public class EditorActivity extends AppCompatActivity {
 
     private void setupNewMidiFile() {
         MidiTrack tempoTrack = new MidiTrack();
-        noteTrack1 = new MidiTrack();
+        noteTrack = new MidiTrack();
 
         TimeSignature ts = new TimeSignature();
         ts.setTimeSignature(4, 4, TimeSignature.DEFAULT_METER, TimeSignature.DEFAULT_DIVISION);
@@ -187,14 +202,14 @@ public class EditorActivity extends AppCompatActivity {
         tempoTrack.insertEvent(tempo);
 
         midi.addTrack(tempoTrack);
-        midi.addTrack(noteTrack1);
+        midi.addTrack(noteTrack);
     }
 
     private void loadExistingMidiFile() {
         List<MidiTrack> tracks = midi.getTracks();
 
         MidiTrack tempoTrack = tracks.get(0);
-        noteTrack1 = tracks.get(1);
+        noteTrack = tracks.get(1);
 
         // get BPM for track
         for (MidiEvent e :
@@ -205,14 +220,13 @@ public class EditorActivity extends AppCompatActivity {
         }
 
         // load notes
-        // TODO: there has to be a way to "inject" a bunch of notes into the EditorView
         for (MidiEvent e :
-                noteTrack1.getEvents()) {
+                noteTrack.getEvents()) {
             if (e instanceof NoteOn) {
                 NoteOn n = (NoteOn) e;
 
                 if (n.getVelocity() != 0) {
-                    editorView.placeNote(
+                    editorView.placeNote(n.getChannel(),
                             (byte) n.getNoteValue(), (int) n.getTick() / MidiFile.DEFAULT_RESOLUTION);
                 }
             }

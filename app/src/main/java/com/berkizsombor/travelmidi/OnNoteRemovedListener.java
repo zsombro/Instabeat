@@ -5,5 +5,5 @@ package com.berkizsombor.travelmidi;
  */
 
 public interface OnNoteRemovedListener {
-    void OnNoteRemoved(byte note, int pos);
+    void OnNoteRemoved(int channel, byte note, int pos);
 }

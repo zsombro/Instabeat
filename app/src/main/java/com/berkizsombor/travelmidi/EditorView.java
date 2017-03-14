@@ -20,16 +20,19 @@ public class EditorView extends View {
     // this is done in an effort to cut out octaves below 300Hz
     // (since phone speakers are not prepared to playback those low frequencies)
     // and also to optimize the performance of the editor view
-    private int minOctave = 3;
-    private int maxOctave = 8;
+    public static final int LOWEST_OCTAVE = 3;
+    public static final int HIGHEST_OCTAVE = 8;
+    public static final int NUM_CHANNELS = 4;
 
-    private int numOfKeys = (maxOctave - minOctave) * 12;
+    private int numOfKeys = (HIGHEST_OCTAVE - LOWEST_OCTAVE) * 12;
     private int numOfNotes = 50; // should be a multiple of 5 for rendering efficiency
 
     private int textSize = 35;
     private int textPadding = 15;
     private int keyHeight;
     private int keyWidth = 150;
+
+    private int channel = 0;
 
     private int pressedNote = 0;
     private float startX, startY;
@@ -40,7 +43,7 @@ public class EditorView extends View {
     while a boolean/byte array only takes up 1 byte/item. Arrays are also faster to traverse
     than dynamic data structures
      */
-    private byte[][] placedNotes = new byte[numOfKeys][numOfNotes];
+    private byte[][][] placedNotes = new byte[NUM_CHANNELS][numOfKeys][numOfNotes];
 
     private String[] keys = new String[numOfKeys];
     private int[] keyVerticalPositions = new int[numOfKeys];
@@ -100,7 +103,7 @@ public class EditorView extends View {
     }
 
     int currentNote = 0;
-    int currentOctave = minOctave;
+    int currentOctave = LOWEST_OCTAVE;
 
     private void generateLabels() {
         for (int i = numOfKeys - 1; i >= 0; i--) {
@@ -181,7 +184,7 @@ public class EditorView extends View {
         startX = event.getX();
 
         byte note =
-                (byte) ( minOctave * 12 + (numOfKeys - (startY / keyHeight)) );
+                (byte) ( LOWEST_OCTAVE * 12 + (numOfKeys - (startY / keyHeight)) );
 
         int pos = (byte) (startX / keyWidth);
 
@@ -213,12 +216,12 @@ public class EditorView extends View {
 
                         //placedNotes[key][pos] = (byte) (placedNotes[key][pos] == 0 ? 1 : 0);
 
-                        if (placedNotes[key][pos] == 0) {
-                            placedNotes[key][pos] = 1;
-                            notePlacedListener.OnNotePlaced(note, pos - 1);
+                        if (placedNotes[channel][key][pos] == 0) {
+                            placedNotes[channel][key][pos] = 1;
+                            notePlacedListener.OnNotePlaced(channel + 1, note, pos - 1);
                         } else {
-                            placedNotes[key][pos] = 0;
-                            noteRemovedListener.OnNoteRemoved(note, pos - 1);
+                            placedNotes[channel][key][pos] = 0;
+                            noteRemovedListener.OnNoteRemoved(channel + 1, note, pos - 1);
                         }
 
                         invalidate();
@@ -230,8 +233,8 @@ public class EditorView extends View {
         return true;
     }
 
-    public void placeNote(byte key, int position) {
-        placedNotes[maxOctave * 12 - key - 1][position + 1] = 1;
+    public void placeNote(int channel, byte key, int position) {
+        placedNotes[channel - 1][HIGHEST_OCTAVE * 12 - key - 1][position + 1] = 1;
     }
 
     private void renderLoop(Canvas canvas, int i) {
@@ -253,7 +256,7 @@ public class EditorView extends View {
 
         canvas.drawLine(lineHorizontalPositions[j], 0, lineHorizontalPositions[j], getMeasuredHeight(), keyPaint);
 
-        if (placedNotes[i][j] == 1) {
+        if (placedNotes[channel][i][j] == 1) {
             canvas.drawRect(
                     lineHorizontalPositions[j], i * keyHeight,
                     lineHorizontalPositions[j] + keyWidth, (i * keyHeight) + keyHeight,
@@ -279,6 +282,18 @@ public class EditorView extends View {
 
     public void setNoteRemovedListener(OnNoteRemovedListener noteRemovedListener) {
         this.noteRemovedListener = noteRemovedListener;
+    }
+
+    public int getChannel() {
+        return channel + 1;
+    }
+
+    public void setChannel(int channel) {
+        this.channel = channel - 1;
+
+        // TODO actually, if my rendering is set up right, i just need to invalidate
+        // TODO event handlers!!! save/load!
+        invalidate();
     }
 
     public Idea getIdea() {

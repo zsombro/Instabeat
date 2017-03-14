@@ -5,5 +5,5 @@ package com.berkizsombor.travelmidi;
  */
 
 public interface OnNotePlacedListener {
-    void OnNotePlaced(byte note, int pos);
+    void OnNotePlaced(int channel, byte note, int pos);
 }

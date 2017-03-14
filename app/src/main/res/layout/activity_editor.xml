@@ -56,6 +56,36 @@
             android:layout_alignTop="@id/stop"
             android:layout_alignBottom="@id/stop"/>
 
+        <Button
+            android:id="@+id/track2"
+            android:text="2"
+            android:layout_width="25pt"
+            android:layout_height="wrap_content"
+            android:layout_toEndOf="@id/track1"
+            android:layout_toRightOf="@id/track1"
+            android:layout_alignTop="@id/stop"
+            android:layout_alignBottom="@id/stop"/>
+
+        <Button
+            android:id="@+id/track3"
+            android:text="3"
+            android:layout_width="25pt"
+            android:layout_height="wrap_content"
+            android:layout_toEndOf="@id/track2"
+            android:layout_toRightOf="@id/track2"
+            android:layout_alignTop="@id/stop"
+            android:layout_alignBottom="@id/stop"/>
+
+        <Button
+            android:id="@+id/track4"
+            android:text="4"
+            android:layout_width="25pt"
+            android:layout_height="wrap_content"
+            android:layout_toEndOf="@id/track3"
+            android:layout_toRightOf="@id/track3"
+            android:layout_alignTop="@id/stop"
+            android:layout_alignBottom="@id/stop"/>
+
         <ImageButton
             android:id="@+id/synth_settings"
             android:src="@drawable/ic_action_settings"
