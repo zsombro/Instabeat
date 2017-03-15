@@ -1,6 +1,7 @@
 package com.berkizsombor.travelmidi;
 
 import android.app.Dialog;
+import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
@@ -149,6 +150,16 @@ public class EditorActivity extends AppCompatActivity {
                 if (processor != null && processor.isRunning()) {
                     processor.stop();
                 }
+            }
+        });
+
+        editButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent i = new Intent(EditorActivity.this, SynthSettingsActivity.class);
+                i.putExtra("track", editorView.getChannel());
+
+                startActivity(i);
             }
         });
 
