@@ -189,6 +189,11 @@ public class EditorActivity extends AppCompatActivity {
 
         File patch = new File(f, "tm_core.pd");
         PdBase.openPatch(patch.getAbsolutePath());
+
+        PdBase.sendFloat("a", 0);
+        PdBase.sendFloat("d", 100);
+        PdBase.sendFloat("s", 30);
+        PdBase.sendFloat("r", 100);
     }
 
     private void setupNewMidiFile() {
