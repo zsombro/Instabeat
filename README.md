@@ -6,14 +6,17 @@ any other choice), please do not create any pull requests right now.* I can't ac
 develop this project on my own. I'm using this repository to back up my work and track my progress.
 
 # Latest changes
+- synth settings can be changed, but they aren't saved into the project yet
 - MIDI editing features have been added (add/remove notes, playback)
 - PureData has been integrated
-- the synth has an envelope filter, but it can't be changed yet
 
 # To do
 - **multitrack support**
+    - multiple channels on GUI ✓
+    - synth settings separated per channel ✓ (in the editor only)
+    - Pure Data code supports separating MIDI notes by channel ×
 - the PureData synth needs to be expanded with a few effects, multiple channels
-- a new activity (*SynthSettingsActivity*) has to be added to allow users to change the sound
+    - it would be cool if you could pick a different waveform as well````
 
 # Current design considerations
 - multitrack support
@@ -26,5 +29,9 @@ develop this project on my own. I'm using this repository to back up my work and
 
 # Known bugs
 - sound becomes distorted when the screen is turned off and then back on while the editor is
-active (sometimes this also happens when I press back in the Editor and then reopen a song)
+active
+    - sometimes this might happen when reopening a song or when changing synth settings
+    - this is related to the fact that PureData is a fucking singleton that holds a shitton of state data and is not disposed of when an activity is destroyed, but might be initialized again when the activity is recreated
+    - jesus christ, i mean seriously
 - differentiating between keypresses and scrolling doesn't work too well
+- if you delete a project, the MIDI file in the background is not removed, which means that if you start another project with a name you already used before, you're in for a surprise

@@ -40,8 +40,6 @@ public class NewIdeaActivity extends AppCompatActivity {
                 result.putExtra("tags", getTagsFromString(tagText.getText().toString()));
                 setResult(RESULT_OK, result);
                 finish();
-                // open up editor activity
-                // finish this one
             }
         });
     }

@@ -159,9 +159,13 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void launchEditorActivity(Idea i) {
-        Intent editorIntent = new Intent(getApplicationContext(), EditorActivity.class);
-        editorIntent.putExtra("idea", i);
-        startActivity(editorIntent);
+        try {
+            Intent editorIntent = new Intent(getApplicationContext(), EditorActivity.class);
+            editorIntent.putExtra("idea", i);
+            startActivity(editorIntent);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     private void exportToExternalStorage(Idea i) {

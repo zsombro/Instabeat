@@ -30,6 +30,7 @@ import java.util.List;
 public class EditorActivity extends AppCompatActivity {
 
     public static final int DEFAULT_BPM = 120;
+    public static final int INTENT_SYNTH_SETTINGS = 2;
 
     private EditorView editorView;
     private ImageButton playButton, stopButton, editButton;
@@ -37,6 +38,7 @@ public class EditorActivity extends AppCompatActivity {
     private Button[] trackButtons;
 
     private Idea idea;
+    private SynthSettings[] synthSettings;
 
     private MidiProcessor processor;
     private MidiFile midi;
@@ -74,6 +76,12 @@ public class EditorActivity extends AppCompatActivity {
         idea = (Idea) getIntent().getSerializableExtra("idea");
         editorView.setIdea(idea);
 
+        // TODO this is not final! Extend file format, add it to save/load mechanism
+        synthSettings = new SynthSettings[EditorView.NUM_CHANNELS];
+        for (int i = 0; i < EditorView.NUM_CHANNELS; i++) {
+            synthSettings[i] = new SynthSettings();
+        }
+
         tempo = new Tempo();
         tempo.setBpm(DEFAULT_BPM);
 
@@ -87,13 +95,15 @@ public class EditorActivity extends AppCompatActivity {
         editorView.setNotePressedListener(new OnNotePressedListener() {
             @Override
             public void onNotePressed(byte note) {
-                // TODO: play the note that was pressed
                 PdBase.sendNoteOn(0, note, 127);
-                Toast.makeText(
-                        getApplicationContext(),
-                        "NOTE: " + Byte.toString(note),
-                        Toast.LENGTH_SHORT)
-                        .show();
+
+                if (BuildConfig.DEBUG) {
+                    Toast.makeText(
+                            getApplicationContext(),
+                            "NOTE: " + Byte.toString(note),
+                            Toast.LENGTH_SHORT)
+                            .show();
+                }
             }
         });
 
@@ -157,9 +167,9 @@ public class EditorActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 Intent i = new Intent(EditorActivity.this, SynthSettingsActivity.class);
-                i.putExtra("track", editorView.getChannel());
+                i.putExtra("settings", synthSettings[editorView.getChannel() - 1]);
 
-                startActivity(i);
+                startActivityForResult(i, INTENT_SYNTH_SETTINGS);
             }
         });
 
@@ -190,8 +200,10 @@ public class EditorActivity extends AppCompatActivity {
     }
 
     private void initPureData() throws IOException {
-        int sampleRate = AudioParameters.suggestSampleRate();
-        PdAudio.initAudio(sampleRate, 0, 2, 8, true);
+        if (!PdAudio.isRunning()) {
+            int sampleRate = AudioParameters.suggestSampleRate();
+            PdAudio.initAudio(sampleRate, 0, 2, 8, true);
+        }
     }
 
     private void loadPatch() throws IOException {
@@ -201,10 +213,16 @@ public class EditorActivity extends AppCompatActivity {
         File patch = new File(f, "tm_core.pd");
         PdBase.openPatch(patch.getAbsolutePath());
 
-        PdBase.sendFloat("a", 0);
-        PdBase.sendFloat("d", 100);
-        PdBase.sendFloat("s", 30);
-        PdBase.sendFloat("r", 100);
+        SynthSettings s = synthSettings[editorView.getChannel() - 1];
+
+        applySynthSettings(s);
+    }
+
+    private void applySynthSettings(SynthSettings s) {
+        PdBase.sendFloat("a", s.getAttack());
+        PdBase.sendFloat("d", s.getDecay());
+        PdBase.sendFloat("s", s.getSustain());
+        PdBase.sendFloat("r", s.getRelease());
     }
 
     private void setupNewMidiFile() {
@@ -245,6 +263,19 @@ public class EditorActivity extends AppCompatActivity {
                     editorView.placeNote(n.getChannel(),
                             (byte) n.getNoteValue(), (int) n.getTick() / MidiFile.DEFAULT_RESOLUTION);
                 }
+            }
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == INTENT_SYNTH_SETTINGS) {
+            if (resultCode == RESULT_OK) {
+                SynthSettings newSettings =
+                        (SynthSettings) data.getSerializableExtra("new_settings");
+
+                synthSettings[editorView.getChannel() - 1] = newSettings;
+                applySynthSettings(newSettings);
             }
         }
     }
@@ -301,6 +332,13 @@ public class EditorActivity extends AppCompatActivity {
         });
 
         d.show();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        PdAudio.release();
+        PdBase.release();
     }
 
     @Override
