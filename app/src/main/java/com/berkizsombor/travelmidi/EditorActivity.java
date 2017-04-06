@@ -208,14 +208,16 @@ public class EditorActivity extends AppCompatActivity {
 
     private void loadPatch() throws IOException {
         File f = getFilesDir();
-        IoUtils.extractZipResource(getResources().openRawResource(R.raw.tm_core), f, true);
+        IoUtils.extractZipResource(getResources().openRawResource(R.raw.channel_separator), f, true);
 
-        File patch = new File(f, "tm_core.pd");
+        File patch = new File(f, getString(R.string.main_patch_name));
         PdBase.openPatch(patch.getAbsolutePath());
 
         SynthSettings s = synthSettings[editorView.getChannel() - 1];
 
         applySynthSettings(s);
+
+        PdBase.sendFloat("volumeGlobal", 0.001f);
     }
 
     private void applySynthSettings(SynthSettings s) {

@@ -6,6 +6,7 @@ any other choice), please do not create any pull requests right now.* I can't ac
 develop this project on my own. I'm using this repository to back up my work and track my progress.
 
 # Latest changes
+- MIDI data is now deleted along with project data
 - synth settings can be changed, but they aren't saved into the project yet
 - MIDI editing features have been added (add/remove notes, playback)
 - PureData has been integrated
@@ -34,4 +35,3 @@ active
     - this is related to the fact that PureData is a fucking singleton that holds a shitton of state data and is not disposed of when an activity is destroyed, but might be initialized again when the activity is recreated
     - jesus christ, i mean seriously
 - differentiating between keypresses and scrolling doesn't work too well
-- if you delete a project, the MIDI file in the background is not removed, which means that if you start another project with a name you already used before, you're in for a surprise

@@ -179,7 +179,6 @@ public class EditorView extends View {
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        // TODO: get position and return either onNotePressed or onNotePlaced
         startY = event.getY();
         startX = event.getX();
 

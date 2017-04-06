@@ -13,6 +13,7 @@ import android.widget.Filterable;
 import android.widget.ImageButton;
 import android.widget.TextView;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -138,6 +139,12 @@ public class IdeaAdapter extends ArrayAdapter<Idea> {
         adb.setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
+                // delete MIDI data
+                File midi = new File(ideas.get(pos).getFileName());
+
+                if (midi.exists()) midi.delete();
+
+                // delete project
                 ideas.remove(pos);
                 ifm.save(ideas);
 

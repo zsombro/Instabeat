@@ -11,6 +11,7 @@
     <string name="ok">OK</string>
     <string name="save_successful">Saved to Documents folder</string>
     <string name="save_failed">Save failed</string>
+    <string name="main_patch_name">channel_separator.pd</string>
     <string-array name="export_array">
         <item>Export to SD card</item>
     </string-array>
