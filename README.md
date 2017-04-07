@@ -6,6 +6,7 @@ any other choice), please do not create any pull requests right now.* I can't ac
 develop this project on my own. I'm using this repository to back up my work and track my progress.
 
 # Latest changes
+- notes are separated by MIDI channels, multiple notes can be played at the same time
 - synth setttings can be changed for each track separately, altough they aren't saved in-between sessions
 - MIDI data is now deleted along with project data
 - MIDI editing features have been added (add/remove notes, playback)
@@ -14,8 +15,9 @@ develop this project on my own. I'm using this repository to back up my work and
 # To do
 - **multitrack support**
     - multiple channels on GUI ✓
-    - synth settings separated per channel ✓ (in the editor only)
+    - synth settings separated per channel ✓
     - Pure Data code supports separating MIDI notes by channel ✓
+    - synth settings can be applied to synths separately ✓
 - the PureData synth needs to be expanded with a few effects, multiple channels
     - it would be cool if you could pick a different waveform as well````
 
