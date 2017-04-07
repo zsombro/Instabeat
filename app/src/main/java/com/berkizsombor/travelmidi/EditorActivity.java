@@ -4,6 +4,7 @@ import android.app.Dialog;
 import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.view.KeyEvent;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
@@ -25,11 +26,13 @@ import org.puredata.core.utils.IoUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.security.Key;
 import java.util.List;
 
 public class EditorActivity extends AppCompatActivity {
 
     public static final int DEFAULT_BPM = 120;
+    public static final float MAX_SYNTH_VOLUME = 0.04f;
     public static final int INTENT_SYNTH_SETTINGS = 2;
 
     private EditorView editorView;
@@ -44,6 +47,8 @@ public class EditorActivity extends AppCompatActivity {
     private MidiFile midi;
     private Tempo tempo;
     MidiTrack noteTrack;
+
+    private float volume = 0.03f;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -97,13 +102,13 @@ public class EditorActivity extends AppCompatActivity {
             public void onNotePressed(byte note) {
                 PdBase.sendNoteOn(0, note, 127);
 
-                if (BuildConfig.DEBUG) {
+                /*if (BuildConfig.DEBUG) {
                     Toast.makeText(
                             getApplicationContext(),
                             "NOTE: " + Byte.toString(note),
                             Toast.LENGTH_SHORT)
                             .show();
-                }
+                }*/
             }
         });
 
@@ -215,16 +220,19 @@ public class EditorActivity extends AppCompatActivity {
 
         SynthSettings s = synthSettings[editorView.getChannel() - 1];
 
-        applySynthSettings(s);
+        applySynthSettings(s, 1);
+        applySynthSettings(s, 2);
+        applySynthSettings(s, 3);
+        applySynthSettings(s, 4);
 
-        PdBase.sendFloat("volumeGlobal", 0.001f);
+        PdBase.sendFloat("volumeGlobal", volume);
     }
 
-    private void applySynthSettings(SynthSettings s) {
-        PdBase.sendFloat("a", s.getAttack());
-        PdBase.sendFloat("d", s.getDecay());
-        PdBase.sendFloat("s", s.getSustain());
-        PdBase.sendFloat("r", s.getRelease());
+    private void applySynthSettings(SynthSettings s, int synthId) {
+        PdBase.sendList("a", s.getAttack(), synthId);
+        PdBase.sendList("d", s.getDecay(), synthId);
+        PdBase.sendList("s", s.getSustain(), synthId);
+        PdBase.sendList("r", s.getRelease(), synthId);
     }
 
     private void setupNewMidiFile() {
@@ -277,9 +285,25 @@ public class EditorActivity extends AppCompatActivity {
                         (SynthSettings) data.getSerializableExtra("new_settings");
 
                 synthSettings[editorView.getChannel() - 1] = newSettings;
-                applySynthSettings(newSettings);
+                applySynthSettings(newSettings, editorView.getChannel());
             }
         }
+    }
+
+    @Override
+    public boolean onKeyUp(int keyCode, KeyEvent event) {
+        if (keyCode == KeyEvent.KEYCODE_VOLUME_UP) {
+            // up
+            volume = (volume <= MAX_SYNTH_VOLUME) ? volume += 0.01 : volume;
+
+            return true;
+        } else if (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN) {
+            // down
+            volume = (volume >= 0) ? volume -= 0.01 : volume;
+            return true;
+        }
+        else
+            return super.onKeyUp(keyCode, event);
     }
 
     @Override

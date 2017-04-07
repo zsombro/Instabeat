@@ -1,0 +1,12 @@
+#N canvas 1004 279 450 300 10;
+#X obj 160 132 spigot;
+#X obj 160 60 unpack f f;
+#X text 194 36 here we separate the message and the id;
+#X obj 217 91 == \$1;
+#X obj 160 12 inlet;
+#X obj 160 174 outlet;
+#X connect 0 0 5 0;
+#X connect 1 0 0 0;
+#X connect 1 1 3 0;
+#X connect 3 0 0 1;
+#X connect 4 0 1 0;
