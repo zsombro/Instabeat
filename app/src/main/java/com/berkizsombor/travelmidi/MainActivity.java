@@ -27,11 +27,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
     private final int INTENT_CREATE_SONG = 1;
+    private final int INTENT_SAVE_SONG = 2;
 
     ListView ideasListView;
     EditText filterEditText;
@@ -143,17 +145,51 @@ public class MainActivity extends AppCompatActivity {
                 String name = data.getStringExtra("name");
                 String[] tags = data.getStringArrayExtra("tags");
 
-                Idea i = new Idea(name, Arrays.asList(tags),
-                        getApplicationContext().getFilesDir().toString());
+                // does a project with this name already exist?
+                boolean alreadyExists = false;
+                Iterator<Idea> itr = ideaList.iterator();
+                while (itr.hasNext() && !alreadyExists) {
+                    if (itr.next().getName().equals(name))
+                        alreadyExists = true;
+                }
 
-                ideaList.add(i);
-                ideaAdapter.notifyDataSetChanged();
+                if (!alreadyExists) {
+                    Idea i = new Idea(name, Arrays.asList(tags),
+                            getApplicationContext().getFilesDir().toString());
 
-                // save to file
+                    ideaList.add(i);
+                    ideaAdapter.notifyDataSetChanged();
+
+                    // save to file
+                    ifm.save(ideaList);
+
+                    launchEditorActivity(i);
+                } else {
+                    // error message
+                    new AlertDialog.Builder(this)
+                            .setTitle("Already exists")
+                            .setMessage("A project with this name already exists!")
+                            .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+
+                                }
+                            })
+                            .show();
+                }
+            }
+        }
+        if (requestCode == INTENT_SAVE_SONG) {
+            if (resultCode == RESULT_OK) {
+                Idea idea = (Idea) data.getSerializableExtra("idea");
+
+                for (int i = 0; i < ideaList.size(); i++) {
+                    if (ideaList.get(i).getName().equals(idea.getName())) {
+                        ideaList.set(i, idea);
+                    }
+                }
+
                 ifm.save(ideaList);
-
-                // TODO: how do we give feedback on whether the draft was created successfully?
-                launchEditorActivity(i);
             }
         }
     }
@@ -162,7 +198,7 @@ public class MainActivity extends AppCompatActivity {
         try {
             Intent editorIntent = new Intent(getApplicationContext(), EditorActivity.class);
             editorIntent.putExtra("idea", i);
-            startActivity(editorIntent);
+            startActivityForResult(editorIntent, INTENT_SAVE_SONG);
         } catch (Exception e) {
             e.printStackTrace();
         }

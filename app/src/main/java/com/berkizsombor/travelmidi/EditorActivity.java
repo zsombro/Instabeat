@@ -82,10 +82,10 @@ public class EditorActivity extends AppCompatActivity {
         editorView.setIdea(idea);
 
         // TODO this is not final! Extend file format, add it to save/load mechanism
-        synthSettings = new SynthSettings[EditorView.NUM_CHANNELS];
-        for (int i = 0; i < EditorView.NUM_CHANNELS; i++) {
+        synthSettings = idea.getSynthSettings();
+        /*for (int i = 0; i < EditorView.NUM_CHANNELS; i++) {
             synthSettings[i] = new SynthSettings();
-        }
+        }*/
 
         tempo = new Tempo();
         tempo.setBpm(DEFAULT_BPM);
@@ -320,9 +320,14 @@ public class EditorActivity extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
-        super.onBackPressed();
-
         saveMidiData();
+        saveSynthSettings();
+
+        Intent editResult = new Intent();
+        editResult.putExtra("idea", idea);
+
+        setResult(RESULT_OK, editResult);
+        finish();
     }
 
     private void saveMidiData() {
@@ -332,6 +337,10 @@ public class EditorActivity extends AppCompatActivity {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private void saveSynthSettings() {
+        idea.setSynthSettings(synthSettings);
     }
 
     private void showBpmDialog() {

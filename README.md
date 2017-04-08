@@ -6,20 +6,28 @@ any other choice), please do not create any pull requests right now.* I can't ac
 develop this project on my own. I'm using this repository to back up my work and track my progress.
 
 # Latest changes
+- synth settings are now saved into the project now, **which makes the app officially feature complete!**
+    - of course, this does not mean that the app is perfect, or that the synth could not be improved
+    and extended with new features, but every feature that I intended is now functional to at least
+    some degree. The road to this point was exhausting, but ultimately rewarding and highly educational.
+- synth setttings can be changed for each track separately
 - notes are separated by MIDI channels, multiple notes can be played at the same time
-- synth setttings can be changed for each track separately, altough they aren't saved in-between sessions
 - MIDI data is now deleted along with project data
 - MIDI editing features have been added (add/remove notes, playback)
 - PureData has been integrated
 
 # To do
+- the PureData synth could be expended upon
+    - let the user pick from multiple waveforms
+    - adding together multiple waves would be even better tho
+    - add options for low pass/high pass/band pass filtering
+    - LFO could be neat, but implementing it could be complicated
+    since so many things can be controlled by an LFO in a modern synth
 - **multitrack support**
     - multiple channels on GUI ✓
     - synth settings separated per channel ✓
     - Pure Data code supports separating MIDI notes by channel ✓
     - synth settings can be applied to synths separately ✓
-- the PureData synth needs to be expanded with a few effects, multiple channels
-    - it would be cool if you could pick a different waveform as well````
 
 # Current design considerations
 - multitrack support
