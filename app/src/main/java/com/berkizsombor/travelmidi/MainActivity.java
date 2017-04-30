@@ -67,9 +67,6 @@ public class MainActivity extends AppCompatActivity {
 
                 Intent i = new Intent(getApplicationContext(), NewIdeaActivity.class);
                 startActivityForResult(i, INTENT_CREATE_SONG);
-
-                Snackbar.make(view, "ADMIRAL SNACKBAR", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
             }
         });
 

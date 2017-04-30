@@ -385,4 +385,8 @@ public class EditorActivity extends AppCompatActivity {
     public void onStop() {
         super.onStop();
     }
+
+    public Idea getIdea() {
+        return idea;
+    }
 }

@@ -7,6 +7,9 @@ import android.graphics.Paint;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
+import android.os.SystemClock;
+
+import static android.os.SystemClock.elapsedRealtime;
 
 /**
  * Created by berki on 2017. 02. 17..
@@ -152,6 +155,8 @@ public class EditorView extends View {
 
     @Override
     public void draw(Canvas canvas) {
+        long frameStart = SystemClock.elapsedRealtime();
+
         super.draw(canvas);
 
         // background TODO: could be nicer tho :(
@@ -173,8 +178,12 @@ public class EditorView extends View {
             renderLoop(canvas, i + 11);
         }
 
-        // this is just debug stuff TODO: eventually remove this line
+        // measure and calculate rendering speed
+        long fps = (long) (1000.0 / (SystemClock.elapsedRealtime() - frameStart));
+
+        // this is just debug stuff
         canvas.drawText(idea.getFileName(), keyWidth, 20, keyPaint);
+        canvas.drawText(String.valueOf(fps), keyWidth, 40, keyPaint);
     }
 
     @Override
@@ -190,7 +199,7 @@ public class EditorView extends View {
         switch(event.getAction()) {
             case MotionEvent.ACTION_DOWN: // note pressed
 
-                if (notePressedListener != null) {
+                if (notePressedListener != null && event.getX() < keyWidth) {
                     notePressedListener.onNotePressed(note);
                     pressedNote = note;
                 }
